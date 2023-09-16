@@ -34,7 +34,7 @@ export default function SearchBar({ placeholder, onSearchTextChange }) {
 const styles = StyleSheet.create({
   search: {
     width: '100%',
-    height: '%15',
+    height: 40,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',

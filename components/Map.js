@@ -18,6 +18,9 @@ const Map = () => {
     { id: 2, name: 'Expositor 2', latitude: -34.9055, longitude: -56.1644 },
     { id: 3, name: 'Expositor 3', latitude: -34.9037, longitude: -56.1654 },
     { id: 4, name: 'Expositor 4', latitude: -34.9045, longitude: -56.1695 },
+    { id: 5, name: 'John Deere', latitude: -33.44854, longitude: -57.90889 },
+    { id: 6, name: 'Brou', latitude: -33.44899, longitude: -57.90910 },
+    { id: 7, name: 'Acodike', latitude: -33.44983, longitude: -57.90662 }
   ];
 
   const navigationConfig = {
@@ -29,7 +32,7 @@ const Map = () => {
   const { coordinates, error, loading, estimatedTime, distance } = useNavigationApi(navigationConfig);
 
   const selectExhibitor = (exhibitor) => {
-    setDeviceCoordinates({ latitude: -34.9036, longitude: -56.1882 });
+    setDeviceCoordinates({ latitude: -33.44867, longitude: -57.90756 });
     setSelectedExhibitor(exhibitor);
   };
 
@@ -52,7 +55,7 @@ const Map = () => {
         />
         <Mapbox.MarkerView
           id="device"
-          coordinate={[-56.1882, -34.9036]}
+          coordinate={[-57.90756, -33.44867]}
         >
           <View style={{ backgroundColor: 'blue', padding: 5 }}>
             <Text style={{ color: 'white' }}>Dispositivo</Text>
@@ -86,7 +89,7 @@ const Map = () => {
       {selectedExhibitor && (
         <View style={{
           position: 'absolute',
-          bottom: 20,
+          bottom: 10,
           left: 0,
           right: 0,
           alignItems: 'center',

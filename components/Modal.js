@@ -1,6 +1,6 @@
 import React, { useLayoutEffect, useRef } from 'react'
 import { BottomSheetModal, BottomSheetModalProvider} from '@gorhom/bottom-sheet'
-import { Keyboard } from 'react-native'
+import { Keyboard, Platform } from 'react-native'
 import Exhibitors from './Exhibitors.js'
 
 export default function Modal() {
@@ -12,7 +12,7 @@ export default function Modal() {
     }, [])
   
     const snapPoints = [
-      '10.5%', '50%', '95%'
+      '10%', '50%', '95%'
     ]
   
     const handleSheetChanges = (index) => {
@@ -28,6 +28,7 @@ export default function Modal() {
             snapPoints={snapPoints}
             enablePanDownToClose={false}
             keyboardBehavior="extend"
+            keyboardBlurBehavior='restore'
             onChange={handleSheetChanges}
             adjustPan={true}
             handleIndicatorStyle={{backgroundColor: 'lightgray', width: 35, height: 4.5, borderRadius: 10}}

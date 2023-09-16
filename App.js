@@ -5,6 +5,7 @@ import Map from './components/Map.js'
 import Modal from './components/Modal.js'
 
 const App = () => {
+  
   return (
     <GestureHandlerRootView style={styles.page}>
       <View style={styles.container}>
