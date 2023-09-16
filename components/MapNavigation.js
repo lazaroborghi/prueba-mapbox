@@ -24,8 +24,9 @@ const MapNavigation = ({ coordinates, cameraRef }) => {
         style={{
           lineWidth: 6,
           lineColor: 'blue',
-          lineOpacity: 0.9,
+          lineOpacity: 0.6,
           lineCap: 'round',
+          lineJoin: 'round',
         }}
       />
     </Mapbox.ShapeSource>

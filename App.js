@@ -1,14 +1,17 @@
 import React from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, View } from 'react-native';
 import Map from './components/Map.js'
+import Modal from './components/Modal.js'
 
 const App = () => {
   return (
-    <View style={styles.page}>
+    <GestureHandlerRootView style={styles.page}>
       <View style={styles.container}>
         <Map/>
+        <Modal/>
       </View>
-    </View>
+    </GestureHandlerRootView>
   );
 }
 
