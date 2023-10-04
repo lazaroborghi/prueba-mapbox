@@ -1,36 +1,44 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Mapbox from '@rnmapbox/maps';
 
-const MapNavigation = ({ coordinates, cameraRef }) => {
-  
+const lineStyle = {
+  lineWidth: 5,
+  lineColor: '#09f',
+  lineOpacity: 0.85,
+  lineCap: 'round',
+  lineJoin: 'round',
+};
+
+const MapNavigation = ({ route, cameraRef, origin, destination }) => {
+  const [hasSetCamera, setHasSetCamera] = useState(false);
+
   useEffect(() => {
-    if (coordinates && coordinates.length > 0) {
-      const firstCoordinate = coordinates[0];
-      const lastCoordinate = coordinates[coordinates.length - 1];
-      
-      // Calcula los límites
-      const southWest = [Math.min(firstCoordinate[0], lastCoordinate[0]), Math.min(firstCoordinate[1], lastCoordinate[1])];
-      const northEast = [Math.max(firstCoordinate[0], lastCoordinate[0]), Math.max(firstCoordinate[1], lastCoordinate[1])];
-      
-      // Ajusta la cámara para que se ajuste a los límites
-      cameraRef.current?.fitBounds(northEast, southWest, 125); //125 es el padding
+    if (route && route.geometry.coordinates.length > 0 && !hasSetCamera) {
+      try {
+        const southWest = [
+          Math.min(origin.longitude, destination.longitude),
+          Math.min(origin.latitude, destination.latitude)
+        ];
+        const northEast = [
+          Math.max(origin.longitude, destination.longitude),
+          Math.max(origin.latitude, destination.latitude)
+        ];
+
+        cameraRef.current?.fitBounds(northEast, southWest, 125);
+        setHasSetCamera(true);
+      } catch (error) {
+        console.error("Error in useEffect: ", error);
+      }
     }
-  }, [coordinates]);
+  }, [route, origin, destination, hasSetCamera]);
 
   return (
-    <Mapbox.ShapeSource id="routeSource" shape={{ type: 'LineString', coordinates }}>
-      <Mapbox.LineLayer
-        id="routeLine"
-        style={{
-          lineWidth: 8,
-          lineColor: '#09f',
-          lineOpacity: 0.85,
-          lineCap: 'round',
-          lineJoin: 'round',
-        }}
-      />
-    </Mapbox.ShapeSource>
+    route && (
+      <Mapbox.ShapeSource id="routeSource" shape={route}>
+        <Mapbox.LineLayer id="routeLine" style={lineStyle}/>
+      </Mapbox.ShapeSource>
+    )
   );
 };
 
-export default MapNavigation;
+export default React.memo(MapNavigation);

@@ -3,6 +3,17 @@ import { View, Text, TouchableOpacity, Animated, Image, ScrollView, ActivityIndi
 import { AntDesign, MaterialCommunityIcons } from '@expo/vector-icons';
 import Exhibitors from './Exhibitors';
 
+const Distance = React.memo(({ getFormattedDistance }) => {
+    console.log('Distance Component Rendered');
+    return (
+        <View style={{justifyContent: 'center', alignItems:'center'}}>
+            <Text style={{ fontSize:16, fontWeight: '500', color: 'darkgreen', paddingVertical: 10 }}>
+                {getFormattedDistance()}
+            </Text>
+        </View>
+    );
+});
+
 const BottomSheet = ({
     slideAnim,
     heightAnim,
@@ -18,7 +29,12 @@ const BottomSheet = ({
 
     const [isImageLoading, setImageLoading] = React.useState(false);
 
-    const renderSearchMode = () => (
+    const getFormattedDistance = React.useCallback(() => {
+        return `A ${formatDistance(distance)} de distancia`;
+    }, [distance, formatDistance]);
+
+
+    const renderSearchMode = React.useCallback(() => (
         <Animated.View
             style={{
                 height: heightAnim.interpolate({
@@ -37,14 +53,14 @@ const BottomSheet = ({
             }}>
             <Exhibitors onMapPress={onMapPress} selectExhibitor={selectExhibitor} />
         </Animated.View>
-    );
-
-    const renderNormalMode = () => (
+    ), [heightAnim, slideAnim, onMapPress, selectExhibitor]);
+    
+    const renderNormalMode = React.useCallback(() => (
         <Animated.View
             style={{
                 height: heightAnim.interpolate({
                     inputRange: [60, 100],
-                    outputRange: ['0%', '48%']
+                    outputRange: ['0%', '50%']
                 }),
                 position: 'absolute',
                 bottom: slideAnim,
@@ -72,9 +88,9 @@ const BottomSheet = ({
                         </TouchableOpacity>
                     </View>
 
-                    <View style={{height: 1, backgroundColor: '#E0E0E0', marginLeft: 20, marginRight: 20, marginBottom: 10}} />
+                    <View style={{height: 1, backgroundColor: '#E0E0E0', marginLeft: 20, marginRight: 20, marginBottom:5}} />
                 
-                    <View style={{flex: 1, justifyContent:'center', alignItems: 'center', gap: 15, paddingHorizontal: 15, paddingBottom: 10}}>
+                    <View style={{flex: 1, justifyContent:'center', alignItems: 'center', gap: 15, paddingHorizontal: 15}}>
                         <ScrollView style={{ maxHeight: selectedExhibitor.image ? 70 : 200, width: '100%' }}>
                             <Text style={{ fontSize:16 }}>{selectedExhibitor.description}</Text>
                         </ScrollView>
@@ -102,10 +118,8 @@ const BottomSheet = ({
             {selectedExhibitor ? (
                 navigationMode ? (
                     <>
-                    <View style={{justifyContent: 'center', alignItems:'center'}}>
-                        <Text style={{ fontSize:16, fontWeight: '500', color: 'darkgreen', paddingBottom: 15 }}>A {formatDistance(distance)} de distancia</Text>
-                    </View>
-                    <View style={{justifyContent: 'center', alignItems: 'center', flexDirection:'row', paddingBottom: 15, gap: 15}}>
+                    <Distance getFormattedDistance={getFormattedDistance} />
+                    <View style={{justifyContent: 'center', alignItems: 'center', flexDirection:'row', paddingBottom: 5, gap: 15}}>
                         <TouchableOpacity onPress={toggleNavigationMode} style={{flexDirection:'row', justifyContent: 'center', alignItems: 'center', padding:15, borderRadius: 25, gap: 5, backgroundColor: 'white',
                             shadowColor: '#000',
                             shadowOffset: { 
@@ -131,7 +145,7 @@ const BottomSheet = ({
                     </View>
                     </>
                 ) : 
-                    <View style={{justifyContent: 'center', alignItems: 'center', paddingBottom: 15}}>
+                    <View style={{justifyContent: 'center', alignItems: 'center', paddingBottom: 5, paddingTop:5}}>
                         <TouchableOpacity onPress={toggleNavigationMode} style={{flexDirection:'row', justifyContent: 'center', alignItems: 'center', padding:15, borderRadius: 25, gap: 5, backgroundColor: 'white',
                             shadowColor: '#000',
                             shadowOffset: { 
@@ -148,7 +162,7 @@ const BottomSheet = ({
             ) : null}
             
         </Animated.View>
-    );
+    ), [heightAnim, slideAnim, selectedExhibitor, onMapPress, navigationMode, toggleNavigationMode, isImageLoading, distance]);    
 
     return (
         <>
@@ -157,4 +171,5 @@ const BottomSheet = ({
     );
 };
 
-export default BottomSheet;
+export default React.memo(BottomSheet);
+

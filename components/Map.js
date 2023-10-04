@@ -3,11 +3,11 @@ import { View, Text, TouchableOpacity, Animated, Easing, Platform } from 'react-
 import Mapbox from '@rnmapbox/maps';
 import useNavigationApi from '../hooks/useNavigationApi.js';
 import MapNavigation from './MapNavigation.js';
-import MapNormal from './MapNormal.js';
 import { Foundation, AntDesign } from '@expo/vector-icons';
 import BottomSheet from './BottomSheet.js';
 import { exhibitors } from '../assets/expositores.js';
 import * as Location from 'expo-location';
+import styles from './MapStyles';
 
 const MAPBOX_ACCESS_TOKEN = 'sk.eyJ1IjoibGF6YXJvYm9yZ2hpIiwiYSI6ImNsbTczaW5jdzNncGgzam85bjdjcDc3ZnQifQ.hhdcu0s0SZ2gm_ZHQZ4h7A';
 Mapbox.setAccessToken(MAPBOX_ACCESS_TOKEN);
@@ -27,30 +27,30 @@ const ExhibitorMarker = React.memo(({ exhibitor, selectedExhibitor, selectExhibi
     return isVisible ? (
         <Mapbox.MarkerView
             key={exhibitor.id}
-            allowOverlap={true}
             id={String(exhibitor.id)}
             coordinate={[exhibitor.longitude, exhibitor.latitude]}
             isSelected={isSelected}
             style={{ zIndex: isSelected ? 2 : 1 }}
         >
-            <TouchableOpacity onPress={() => selectExhibitor(exhibitor)}>
-                <View style={{ justifyContent: 'center', alignItems: 'center', opacity: markerOpacity }}>
+           <TouchableOpacity onPress={() => selectExhibitor(exhibitor)}>
+                <View style={[styles.markerView, { opacity: markerOpacity }]}>
                     {isSelected ? (
-                        <>
-                            <Foundation name="marker" size={62} color="red" />
-                        </>
+                        <Foundation name="marker" size={Platform.OS === 'android' ? 34 : 62} color="red" />
                     ) : (
                         <Foundation name="marker" size={32} color="green" />
                     )}
-                    <Text style={{ 
-                        fontSize: isSelected ? 22 : 16,
-                        fontWeight: isSelected ? '600' : '400', 
-                        color: 'black'
-                    }}>
+                    <Text style={[
+                        styles.markerText,
+                        {
+                            fontSize: (Platform.OS === 'android' && isSelected) ? 16 : (isSelected ? 22 : 16),
+                            fontWeight: (Platform.OS === 'android' && isSelected) ? '500' : (isSelected ? '600' : '400'),
+                        }
+                    ]}>
                         {exhibitor.name}
                     </Text>
                 </View>
             </TouchableOpacity>
+
         </Mapbox.MarkerView>
     ) : null;
 });
@@ -84,8 +84,8 @@ const Map = () => {
                 locationSubscription = await Location.watchPositionAsync(
                     {
                         accuracy: Location.Accuracy.BestForNavigation,
-                        timeInterval: 5000,
-                        distanceInterval: 10,
+                        timeInterval: 3000,
+                        distanceInterval: 7,
                     },
                     (location) => {
                         setDeviceCoordinates([
@@ -120,7 +120,7 @@ const Map = () => {
         navigationMode: navigationMode
     }), [deviceCoordinates, selectedExhibitor, navigationMode]); // Agregados los demás posibles cambios en dependencias
     
-    const { coordinates, error, loading, distance } = useNavigationApi(navigationConfig);
+    const { route, error, loading, distance, origin, destination } = useNavigationApi(navigationConfig);
 
     const openBottomSheet = useCallback(() => {
         console.log(selectedExhibitor)
@@ -242,8 +242,6 @@ const Map = () => {
         }
     };
     
-    
-
     return (
         <View style={{ flex: 1 }}>
             <Animated.View style={{ flex: heightAnim.interpolate({
@@ -269,42 +267,29 @@ const Map = () => {
                         />
                     ))}
 
-                    {navigationMode ? (
-                        <MapNavigation coordinates={coordinates} cameraRef={cameraRef} />
-                    ) : (
-                        <MapNormal />
+                    {navigationMode && (
+                        <MapNavigation route={route} cameraRef={cameraRef} origin={origin} destination={destination} />
                     )}
                 </Mapbox.MapView>
-                        <TouchableOpacity 
-                            onPress={initiateSearch} 
-                            style={{
-                                position: 'absolute',
-                                bottom: selectedExhibitor ? 50 : 80,
-                                left: '50%',
-                                transform: [{translateX: selectedExhibitor ? -50 : -100}],
-                                flexDirection:'row', 
-                                justifyContent: 'center', 
-                                alignItems: 'center', 
-                                padding: selectedExhibitor ? 5 : 15, // Reduce padding si un expositor está seleccionado
-                                width: selectedExhibitor ? 100 : 200, // Reduce width si un expositor está seleccionado
-                                borderRadius: 25, 
-                                gap: 5, 
-                                opacity: selectedExhibitor ? 0.60 : 0.85,
-                                backgroundColor: 'white',
-                                shadowColor: '#000',
-                                shadowOffset: { 
-                                    width: 0,
-                                    height: 2,
-                                },
-                                shadowOpacity: 0.2,
-                                elevation:5, 
-                            }}
-                        >
-                            <AntDesign name="search1" size={15} color="darkgreen" />
-                            <Text style={{fontSize: selectedExhibitor ? 14 : 16, color: 'darkgreen', fontWeight: '500'}}>
-                                {selectedExhibitor ? 'Buscar' : 'Buscar expositores'}
-                            </Text>
-                        </TouchableOpacity>
+                <TouchableOpacity 
+                    onPress={initiateSearch} 
+                    style={[
+                        styles.searchButton,
+                        {
+                            bottom: selectedExhibitor ? 55 : 80,
+                            left: '50%',
+                            transform: [{translateX: selectedExhibitor ? -50 : -100}],
+                            padding: selectedExhibitor ? 5 : 15,
+                            width: selectedExhibitor ? 100 : 200,
+                            opacity: selectedExhibitor ? 0.60 : 0.85,
+                        }
+                    ]}
+                >
+                    <AntDesign name="search1" size={15} style={styles.searchIcon} />
+                    <Text style={[styles.searchText, {fontSize: selectedExhibitor ? 14 : 16}]}>
+                        {selectedExhibitor ? 'Buscar' : 'Buscar expositores'}
+                    </Text>
+                </TouchableOpacity>
 
             </Animated.View>
             <BottomSheet
