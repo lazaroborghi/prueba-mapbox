@@ -1,41 +1,49 @@
+// useNavigationApi.js
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-// Custom hook para interactuar con la API de Mapbox Directions
-const useNavigationApi = ({ origin, destination, token, geometries = 'geojson' }) => {
-  // Estados para almacenar la información de la ruta, errores y estado de carga
-  const [coordinates, setCoordinates] = useState([]);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [estimatedTime, setEstimatedTime] = useState(null);
-  const [distance, setDistance] = useState(null);
+const useNavigationApi = ({ origin, destination, token, deviceCoordinates, navigationMode }) => {
+  const [routeData, setRouteData] = useState({
+    coordinates: [],
+    estimatedTime: null,
+    distance: null,
+    loading: false,
+    error: null
+  });
 
   useEffect(() => {
-    // Función asincrónica para obtener la ruta desde la API
+    if (!origin || !destination || !token || !navigationMode) return; 
+
     const fetchRoute = async () => {
-      setLoading(true);
+      setRouteData(prev => ({ ...prev, loading: true }));
+
       try {
-        const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?access_token=${token}&geometries=${geometries}`;
+        const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?access_token=${token}&geometries=geojson`;
         const response = await axios.get(url);
-        const coords = response.data.routes[0].geometry.coordinates;
-        const time = response.data.routes[0].duration;
-        const dist = response.data.routes[0].distance;
-        
-        // Actualizamos los estados
-        setCoordinates(coords);
-        setEstimatedTime(time);
-        setDistance(dist);
+
+        setRouteData({
+          coordinates: response.data.routes[0].geometry.coordinates,
+          estimatedTime: response.data.routes[0].duration,
+          distance: response.data.routes[0].distance,
+          loading: false,
+          error: null
+        });
       } catch (err) {
-        setError(err);
-      } finally {
-        setLoading(false);
+        console.error(err);
+        setRouteData({
+          coordinates: [],
+          estimatedTime: null,
+          distance: null,
+          loading: false,
+          error: err
+        });
       }
     };
 
     fetchRoute();
-  }, [origin, destination, token, geometries]);
+  }, [origin, destination, token, deviceCoordinates, navigationMode]);
 
-  return { coordinates, error, loading, estimatedTime, distance };
+  return routeData;
 };
 
 export default useNavigationApi;

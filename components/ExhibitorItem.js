@@ -3,9 +3,9 @@ import { StyleSheet, View, Text, Image } from "react-native";
 import { MaterialIcons } from '@expo/vector-icons'
 import { Pressable } from "react-native";
 
-function ExhibitorItem({item, fairStand}) {
+function ExhibitorItem({item, fairStand, selectExhibitor}) {
     return (
-    <Pressable style={({ pressed }) => [
+    <Pressable onPress={()=> selectExhibitor(item)} style={({ pressed }) => [
         styles.exhibitor,
         pressed && styles.exhibitorPressed
     ]}>
@@ -16,8 +16,8 @@ function ExhibitorItem({item, fairStand}) {
             />
         </View>
         <View style={styles.itemContainer}>
-            <Text style={styles.title}>{item.nombre}</Text>
-            <Text>{item.descripcion}</Text>
+            <Text style={styles.title}>{item.name}</Text>
+            <Text>{item.description}</Text>
         </View>
         <View style={styles.iconContainer}>
             <Pressable>
@@ -33,6 +33,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         paddingVertical: 15,
         paddingHorizontal: 15,
+        alignItems: 'center',
     },
     exhibitorPressed: {
         opacity: 0.5

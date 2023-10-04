@@ -13,7 +13,7 @@ const MapNavigation = ({ coordinates, cameraRef }) => {
       const northEast = [Math.max(firstCoordinate[0], lastCoordinate[0]), Math.max(firstCoordinate[1], lastCoordinate[1])];
       
       // Ajusta la cámara para que se ajuste a los límites
-      cameraRef.current?.fitBounds(northEast, southWest, 50); // 50 es el padding
+      cameraRef.current?.fitBounds(northEast, southWest, 125); //125 es el padding
     }
   }, [coordinates]);
 
@@ -22,9 +22,9 @@ const MapNavigation = ({ coordinates, cameraRef }) => {
       <Mapbox.LineLayer
         id="routeLine"
         style={{
-          lineWidth: 6,
-          lineColor: 'blue',
-          lineOpacity: 0.6,
+          lineWidth: 8,
+          lineColor: '#09f',
+          lineOpacity: 0.85,
           lineCap: 'round',
           lineJoin: 'round',
         }}

@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, TouchableOpacity } from 'react-native';
-import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
+import React, { useState, useRef, useEffect } from 'react';
+import { StyleSheet, View, TouchableOpacity, TextInput } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
 
 export default function SearchBar({ placeholder, onSearchTextChange }) {
   const [searchText, setSearchText] = useState('');
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
 
   const handleChangeText = (text) => {
     setSearchText(text);
@@ -15,7 +21,8 @@ export default function SearchBar({ placeholder, onSearchTextChange }) {
     <View style={styles.search}>
       <View style={styles.searchWrapper}>
         <AntDesign name="search1" size={20} color="darkgreen" style={styles.searchIcon} />
-        <BottomSheetTextInput
+        <TextInput
+          ref={inputRef}
           style={styles.searchInput}
           placeholder={placeholder}
           value={searchText}
@@ -33,19 +40,19 @@ export default function SearchBar({ placeholder, onSearchTextChange }) {
 
 const styles = StyleSheet.create({
   search: {
-    width: '100%',
-    height: 40,
+    width: '95%',
+    height: '10%',
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 15,
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
   },
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#e8e8e8',
-    borderRadius: 15,
+    borderRadius: 20,
     width: '100%',
     height: 40,
   },
@@ -59,7 +66,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#e8e8e8',
     height: 40,
-    borderRadius: 10,
+    borderRadius: 20,
     fontSize: 18,
   },
 });

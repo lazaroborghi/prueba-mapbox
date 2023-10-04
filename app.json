@@ -36,6 +36,11 @@
           "RNMapboxMapsDownloadToken": "sk.eyJ1IjoibGF6YXJvYm9yZ2hpIiwiYSI6ImNsbTczaW5jdzNncGgzam85bjdjcDc3ZnQifQ.hhdcu0s0SZ2gm_ZHQZ4h7A"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7c9cc705-e783-47b9-97c1-cf546299493c"
+      }
+    }
   }
 }
