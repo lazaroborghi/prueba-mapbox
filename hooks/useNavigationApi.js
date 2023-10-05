@@ -3,9 +3,10 @@ import axios from 'axios';
 import { lineString as makeLineString } from '@turf/helpers';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const useNavigationApi = ({ origin, destination, token, deviceCoordinates, navigationMode }) => {
+const useNavigationApi = ({ origin, destination, token, navigationMode }) => {
   const [route, setRoute] = useState(null);
   const [distance, setDistance] = useState(null);
+  const [duration, setDuration] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -24,22 +25,21 @@ const useNavigationApi = ({ origin, destination, token, deviceCoordinates, navig
           latitude: destination.latitude.toFixed(6), 
           longitude: destination.longitude.toFixed(6)
       }
-  });
+    });
+
     try {
-      // Intentar recuperar la ruta desde AsyncStorage
       const storedRouteData = await AsyncStorage.getItem(routeKey);
       const currentTime = new Date().getTime();
 
       if (storedRouteData) {
-        const { savedRoute, savedDistance, timestamp } = JSON.parse(storedRouteData);
+        const { savedRoute, savedDistance, savedDuration, timestamp } = JSON.parse(storedRouteData);
         
-        // Verificar si pasó más de un mes desde que la ruta fue almacenada
         const oneMonthInMilliseconds = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
         if (currentTime - timestamp < oneMonthInMilliseconds) {
           setRoute(savedRoute);
           setDistance(savedDistance);
+          setDuration(savedDuration); // Recuperando y asignando la duración
         } else {
-          // Si pasó más de un mes, eliminar la ruta almacenada y continuar para recuperar una nueva de la API
           await AsyncStorage.removeItem(routeKey);
           throw new Error("Route is outdated, fetching a new one.");
         }
@@ -47,22 +47,25 @@ const useNavigationApi = ({ origin, destination, token, deviceCoordinates, navig
         throw new Error("No route found, fetching a new one.");
       }
     } catch (err) {
-      // En caso de error (ruta no encontrada o ruta obsoleta), solicitar una nueva ruta de la API
       const cancelTokenSource = axios.CancelToken.source();
       try {
         const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?access_token=${token}&geometries=geojson`;
         const response = await axios.get(url, { cancelToken: cancelTokenSource.token });
+
+        console.log(response.data.routes[0]);
+
         const newRoute = makeLineString(response.data.routes[0].geometry.coordinates);
         const newDistance = response.data.routes[0].distance;
-
+        const newDuration = response.data.routes[0].duration;
         setRoute(newRoute);
         setDistance(newDistance);
+        setDuration(newDuration);
 
-        // Almacenar la nueva ruta, distancia y una marca de tiempo en AsyncStorage
         await AsyncStorage.setItem(routeKey, JSON.stringify({
           savedRoute: newRoute,
           savedDistance: newDistance,
-          timestamp: new Date().getTime() // Almacenar el tiempo actual como marca de tiempo
+          savedDuration: newDuration,
+          timestamp: new Date().getTime()
         }));
 
       } catch (err) {
@@ -73,7 +76,6 @@ const useNavigationApi = ({ origin, destination, token, deviceCoordinates, navig
         setLoading(false);
       }
       
-      // Cancelar la solicitud si el componente se desmonta antes de que se resuelva la solicitud
       return () => cancelTokenSource && cancelTokenSource.cancel();
     } finally {
       setLoading(false);
@@ -87,6 +89,7 @@ const useNavigationApi = ({ origin, destination, token, deviceCoordinates, navig
   return {
     route,
     distance,
+    duration,
     loading,
     error,
     origin,

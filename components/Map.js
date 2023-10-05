@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Animated, Easing, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Animated, Easing, Platform, Dimensions } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import useNavigationApi from '../hooks/useNavigationApi.js';
 import MapNavigation from './MapNavigation.js';
@@ -16,7 +16,12 @@ const UNSELECTED_MARKER_OPACITY = 0.4;
 
 const formatDistance = (distance) => {
     const roundedDistance = Math.round(distance);
-    return `${roundedDistance} metros`;
+    return `${roundedDistance}`;
+};
+
+const formatDuration = (duration) => {
+    const mins = Math.floor(duration / 60);
+    return `${mins}`;
 };
 
 const ExhibitorMarker = React.memo(({ exhibitor, selectedExhibitor, selectExhibitor, distance, navigationMode }) => {
@@ -66,8 +71,10 @@ const Map = () => {
     const [isSearchMode, setIsSearchMode] = useState(false);
     const cameraRef = useRef(null);
     const [firstOpen, setFirstOpen] = useState(true);
-
+    const [cameraAdjusted, setCameraAdjusted] = useState(false);
+    const [originalCameraPosition, setOriginalCameraPosition] = useState(null);
     const [deviceCoordinates, setDeviceCoordinates] = useState(null);
+    const [followUserMode, setFollowUserMode] = useState(false);
 
     useEffect(() => {
         (async () => {
@@ -84,8 +91,8 @@ const Map = () => {
                 locationSubscription = await Location.watchPositionAsync(
                     {
                         accuracy: Location.Accuracy.BestForNavigation,
-                        timeInterval: 3000,
-                        distanceInterval: 7,
+                        timeInterval: 2500,
+                        distanceInterval: 5,
                     },
                     (location) => {
                         setDeviceCoordinates([
@@ -112,6 +119,31 @@ const Map = () => {
         }
     }, [selectedExhibitor, isSearchMode, openBottomSheet]);
     
+    useEffect(() => {
+        if (!followUserMode && cameraRef.current) {
+            cameraRef.current.setCamera({
+                pitch: 0,  // Esto debería restablecer la perspectiva de la cámara a la normal.
+                animationDuration: 300  // Añade una duración para que la transición sea suave.
+            });
+        } 
+        
+        if (followUserMode) {
+            startNavigation();
+        }
+    }, [followUserMode]);  
+    
+    useEffect(() => {
+        if (followUserMode && cameraRef.current) {
+            cameraRef.current.setCamera({
+                centerCoordinate: deviceCoordinates,
+                zoomLevel: 19,
+                duration: 2000,
+                pitch: 60,
+            });
+        }
+    }, [followUserMode, deviceCoordinates]);
+    
+
     const navigationConfig = useMemo(() => ({
         origin: deviceCoordinates ? {latitude: deviceCoordinates[1], longitude: deviceCoordinates[0]} : null,
         destination: selectedExhibitor ? {latitude: selectedExhibitor.latitude, longitude: selectedExhibitor.longitude} : null,
@@ -120,7 +152,42 @@ const Map = () => {
         navigationMode: navigationMode
     }), [deviceCoordinates, selectedExhibitor, navigationMode]); // Agregados los demás posibles cambios en dependencias
     
-    const { route, error, loading, distance, origin, destination } = useNavigationApi(navigationConfig);
+    const { route, distance, duration, loading, error, origin, destination } = useNavigationApi(navigationConfig);
+    
+    const adjustCamera = () => {
+        // Si `deviceCoordinates` o `selectedExhibitor` son null, no ajustamos la cámara
+        if (!deviceCoordinates || !selectedExhibitor) return;
+    
+        if (!cameraAdjusted) {
+            
+            // Calcula el punto medio entre el usuario y el destino en el eje X y Y
+            const midLatitude = (deviceCoordinates[1] + selectedExhibitor.latitude) / 2;
+            const midLongitude = (deviceCoordinates[0] + selectedExhibitor.longitude) / 2;
+    
+            let zoomLevel = 17;  // Ajusta esto basado en la distancia o según lo necesites
+    
+            // Ajusta la cámara a la nueva posición
+            cameraRef.current.setCamera({
+                centerCoordinate: [midLongitude, midLatitude],
+                zoomLevel: zoomLevel,
+                animationDuration: 500,
+            });
+    
+            // Marcar que la cámara ha sido ajustada
+            setCameraAdjusted(true);
+        } else {
+            // Si la cámara ya fue ajustada, vuelva a la posición original
+            cameraRef.current.setCamera({
+                centerCoordinate: deviceCoordinates,
+                zoomLevel: 19,
+                duration: 500,
+                pitch: 45,
+            });
+    
+            // Marcar que la cámara ha sido desajustada
+            setCameraAdjusted(false);
+        }
+    };
 
     const openBottomSheet = useCallback(() => {
         console.log(selectedExhibitor)
@@ -181,8 +248,31 @@ const Map = () => {
         }
     }, [slideAnim, heightAnim, navigationMode, toggleNavigationMode, isSearchMode]);
     
-    
-    
+    const startNavigation = useCallback(() => {
+
+        const toValueSlide = -200;
+        const toValueHeight = Dimensions.get('window').height * 0.155;
+        if (Platform.OS === 'android') {
+            slideAnim.setValue(toValueSlide);
+            heightAnim.setValue(toValueHeight);
+        } else {
+            Animated.parallel([
+                Animated.timing(slideAnim, {
+                    toValue: toValueSlide,
+                    duration: 300,
+                    easing: Easing.in(Easing.cubic),
+                    useNativeDriver: false,
+                }),
+                Animated.timing(heightAnim, {
+                    toValue: toValueHeight,
+                    duration: 200,
+                    easing: Easing.in(Easing.cubic),
+                    useNativeDriver: false,
+                })
+            ]).start();
+        }
+    }, [slideAnim, heightAnim]);
+
     const selectExhibitor = useCallback((exhibitor) => {
         
         if(isSearchMode){
@@ -220,12 +310,17 @@ const Map = () => {
         closeBottomSheet();
         setSelectedExhibitor(null);
         setNavigationMode(false);
+        setFollowUserMode(false);
         setIsSearchMode(false);
     }, []);
 
     const toggleNavigationMode = useCallback(() => {
         setNavigationMode(prevMode => !prevMode);
     }, []);
+
+    const toggleFollowUserMode = useCallback(() => {
+        setFollowUserMode(prevMode => !prevMode);
+    } ,[]);
 
     const initiateSearch = () => {
         console.log(selectedExhibitor)
@@ -246,16 +341,17 @@ const Map = () => {
         <View style={{ flex: 1 }}>
             <Animated.View style={{ flex: heightAnim.interpolate({
                 inputRange: [60, 110],
-                outputRange: [1, 0.45]
+                outputRange: followUserMode ? [1, 0.90] : [1, 0.45]
             }) }}>
                 <Mapbox.MapView  style={{ flex: 1 }} onPress={onMapPress} styleURL='mapbox://styles/lazaroborghi/cln8wy7yk07c001qb4r5h2yrg' scaleBarEnabled={false}>
-                    <Mapbox.UserLocation visible={true} androidRenderMode='gps' renderMode='native'/>
+                    <Mapbox.UserLocation visible={true} androidRenderMode={followUserMode ? 'compass' : 'gps'} renderMode='native' showsUserHeadingIndicator={followUserMode} />
                     <Mapbox.Camera
                         ref={cameraRef}
-                        centerCoordinate={[exhibitors[0].longitude, exhibitors[0].latitude]}
+                        centerCoordinate={followUserMode && deviceCoordinates ? [deviceCoordinates[0], deviceCoordinates[1]] : [exhibitors[0].longitude, exhibitors[0].latitude]}
                         zoomLevel={16}
-                        animationDuration={1000}
+                        animationDuration={2000}
                     />
+
                     {exhibitors.map((exhibitor) => (
                         <ExhibitorMarker 
                             key={exhibitor.id}
@@ -271,25 +367,28 @@ const Map = () => {
                         <MapNavigation route={route} cameraRef={cameraRef} origin={origin} destination={destination} />
                     )}
                 </Mapbox.MapView>
-                <TouchableOpacity 
-                    onPress={initiateSearch} 
-                    style={[
-                        styles.searchButton,
-                        {
-                            bottom: selectedExhibitor ? 55 : 80,
-                            left: '50%',
-                            transform: [{translateX: selectedExhibitor ? -50 : -100}],
-                            padding: selectedExhibitor ? 5 : 15,
-                            width: selectedExhibitor ? 100 : 200,
-                            opacity: selectedExhibitor ? 0.60 : 0.85,
-                        }
-                    ]}
-                >
-                    <AntDesign name="search1" size={15} style={styles.searchIcon} />
-                    <Text style={[styles.searchText, {fontSize: selectedExhibitor ? 14 : 16}]}>
-                        {selectedExhibitor ? 'Buscar' : 'Buscar expositores'}
-                    </Text>
-                </TouchableOpacity>
+                {!followUserMode && (
+                    <TouchableOpacity 
+                        onPress={initiateSearch} 
+                        style={[
+                            styles.searchButton,
+                            {
+                                bottom: selectedExhibitor ? 58 : 80,
+                                left: '50%',
+                                transform: [{translateX: selectedExhibitor ? -50 : -100}],
+                                padding: selectedExhibitor ? 5 : 15,
+                                width: selectedExhibitor ? 100 : 200,
+                                opacity: selectedExhibitor ? 0.60 : 0.85,
+                            }
+                        ]}
+                    >
+                        <AntDesign name="search1" size={15} style={styles.searchIcon} />
+                        <Text style={[styles.searchText, {fontSize: selectedExhibitor ? 14 : 16}]}>
+                            {selectedExhibitor ? 'Buscar' : 'Buscar expositores'}
+                        </Text>
+                    </TouchableOpacity>
+                )}
+
 
             </Animated.View>
             <BottomSheet
@@ -303,6 +402,11 @@ const Map = () => {
                 toggleNavigationMode={toggleNavigationMode}
                 isSearchMode={isSearchMode}
                 selectExhibitor={selectExhibitor}
+                followUserMode={followUserMode}
+                toggleFollowUserMode={toggleFollowUserMode}
+                formatDuration={formatDuration}
+                duration={duration}
+                adjustCamera={adjustCamera}
             />
         </View>
     );
